@@ -87,10 +87,10 @@ def prophet_select(data_pred,period):
 
     # Логика оценки: мы оцениваем модель по такому же интервалу, по которому прогназируем. Т.е. если хотим прогнозировать на год, то
     # оцениваем модель по средней ошибке за предыдущий год, если прогнозируем на неделю, то оцениваем тоже по последней неделе.
-    MAE = round(mean_absolute_error(test, y_pred),2)
-    MAPE = round(mean_absolute_percentage_error(test, y_pred),2)
+    MAE = round(mean_absolute_error(test, y_pred),3)
+    MAPE = round(mean_absolute_percentage_error(test, y_pred),3)
     st.markdown('**Mean absolute error of Prophet model for a period of '+str(period)+' days is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(period)+' days is** '+str(MAPE)+ ' %')
+    st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
     return all_forecasts
 
 
@@ -151,10 +151,10 @@ Returns:
     # Считаем и выводим ошибку по последнему году
     y_test = test['y'][:-period]
     y_pred  = all_forecasts['y_prediction'][len(all_forecasts)-period:]
-    MAE = round(mean_absolute_error(y_test, y_pred),2)
-    MAPE = round(mean_absolute_percentage_error(y_test, y_pred),2)
-    st.markdown('**Mean absolute error of Prophet model for a period of one last year is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of Prophet model for a period of one last year is** '+str(MAPE)+ ' %')
+    MAE = round(mean_absolute_error(y_test, y_pred),3)
+    MAPE = round(mean_absolute_percentage_error(y_test, y_pred),3)
+    st.markdown('**Mean absolute error of XGBoost model for a period of one last year is** '+str(MAE))
+    st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
 
     return all_forecasts
 
@@ -197,12 +197,12 @@ Returns:
     fig = plt.figure()
 
     # Считаем и выводим ошибку по последнему году
-    test = all_forecasts['y'][len(all_forecasts)-365-period:len(all_forecasts)-period]
-    y_pred = all_forecasts['y_prediction'][len(all_forecasts)-365-period:len(all_forecasts)-period]
-    MAE = round(mean_absolute_error(test, y_pred),2)
-    MAPE = round(mean_absolute_percentage_error(test, y_pred),2)
-    st.markdown('**Mean absolute error of Prophet model for a period of one last year is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of Prophet model for a period of one last year is** '+str(MAPE)+ ' %')
+    # test = all_forecasts['y'][len(all_forecasts)-365-period:len(all_forecasts)-period]
+    # y_pred = all_forecasts['y_prediction'][len(all_forecasts)-365-period:len(all_forecasts)-period]
+    # MAE = round(mean_absolute_error(test, y_pred),2)
+    # MAPE = round(mean_absolute_percentage_error(test, y_pred),2)
+    # st.markdown('**Mean absolute error of Prophet model for a period of one last year is** '+str(MAE))
+    # st.markdown('**Mean absolute percentage error of Prophet model for a period of one last year is** '+str(MAPE*100)+ ' %')
 
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
