@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from functional.preproc_functional import decompose, ts_test, preprocessing, plot_fig,plot_Ohlc_fig,add_features_preprocessing
-from functional.predict_functional import prophet, create_features, XGB_predict
+from functional.predict_functional import prophet, create_features, XGB_predict, prophet_select, XGB_select
 import yfinance as yf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -116,11 +116,11 @@ elif page == "Exploration":
 
 elif page == "Prediction":
     st.markdown('---')
-    st.header("Data Prediction")
+    st.header("Model selection")
     data_pred = st.session_state.data_pred
     df = st.session_state.df
-    st.header("Forecasting with Prophet")
-    n_months = st.slider('Months of prediction:', 1,12)
+    # st.header("Forecasting with Prophet")
+    n_months = st.slider('Months of prediction:', 1,12, key = "n_months")
     period = n_months * 30
 
     agree1 = st.checkbox('Select dataframe with additional features from local database')
@@ -139,12 +139,19 @@ elif page == "Prediction":
             additional_features = add_features_preprocessing(additional_data)
 
     data_predict = data_pred.reset_index()
+    prophet_select(data_predict,period)
+
+    st.header("Data Prediction")
+    st.header("Forecasting with Prophet")
     all_forecasts = prophet(data_predict,period)
     st.markdown('---')
     feature_df = create_features(all_forecasts)
     # Объединяем загруженные признаки с дополнительным созданным признаковом пространством\
     if agree1 or agree2:
         feature_df = pd.merge(feature_df,additional_features, on='ds', how='left')
+
+    st.header('Model: XGBoost. Test period: '+str(period)+' days')
+    XGB_select(feature_df,period)
 
     st.header("Forecasting with XGBoost")
     XGB_predict(feature_df,period)
