@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from functional.preproc_functional import decompose, ts_test, preprocessing, plot_fig,plot_Ohlc_fig,add_features_preprocessing
+from functional.preproc_functional import first_dif, hist_plot, decompose, ts_test, preprocessing, plot_fig,plot_Ohlc_fig,add_features_preprocessing,to_normal_dist, is_normal
 from functional.predict_functional import prophet, create_features, XGB_predict, prophet_select, XGB_select
 import yfinance as yf
 import matplotlib.pyplot as plt
@@ -41,7 +41,6 @@ if page == "Data loading and preprocessing":
         dataset = ('BA_data','NOC_data','RTX_data', 'data_MW', 'data_weather')
         option = st.selectbox('Select dataset for prediction from database',dataset)
         DATA_URL =('./HISTORICAL_DATA/'+option+'.csv')
-        # option = st.selectbox('Upload your data via URL',dataset)
         df = pd.read_csv(DATA_URL)
         if 'df' not in st.session_state:
             st.session_state.df = df
@@ -82,7 +81,6 @@ if page == "Data loading and preprocessing":
 
     plot_fig(data_pred,v_period)
 
-
     if st.checkbox('Show data after preprocessing'):
         st.subheader('Your data after preprocessing')
         st.write("Please select a page on the left.")
@@ -102,16 +100,29 @@ elif page == "Exploration":
     st.markdown('**Data are presented for the period from** '+str(min_date)+' to '+str(max_date))
     plot_Ohlc_fig(data_pred)
 
+    st.header("Tests for normality of target distribution")
+
+    hist_plot(data_pred['y'])
+
+    st.header("Methods for brining  distribution to normal distribution")
+    normal_data = data_pred.copy()
+    normal_data = to_normal_dist(normal_data)
+    st.subheader('Power-law transformation of data (taking from the square root)')
+    hist_plot(normal_data['y_sqrt'])
+    st.subheader('Transformation by Logarithm')
+    hist_plot(normal_data['y_log'])
+    st.subheader('Doxcox transformation')
+    hist_plot(normal_data['y_boxcox'])
+
+
     st.header("Time Series Decomposition")
     decompose(data_pred)
     ts_test(data_pred)
 
     st.header("Methods for bringing a series to stationarity")
     st.subheader("To stationarity by the method of first differences")
-    df2 = data_pred.copy()
-    df2['shift_y'] = df2['y'] - df2['y'].shift(1)
-    df2 =df2.dropna()
-    ts_test(df2['shift_y'])
+    dif_data = data_pred.copy()
+    first_dif(dif_data )
     st.markdown('---')
 
 elif page == "Prediction":
@@ -119,7 +130,6 @@ elif page == "Prediction":
     st.header("Model selection")
     data_pred = st.session_state.data_pred
     df = st.session_state.df
-    # st.header("Forecasting with Prophet")
     n_months = st.slider('Months of prediction:', 1,12, key = "n_months")
     period = n_months * 30
 

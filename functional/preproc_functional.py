@@ -20,7 +20,7 @@ def decompose(data_pred):
     st.subheader("Seasonal decomposition of resampled data by months ")
     df = data_pred['y'].resample('m').mean().dropna()
     decomposition2 = seasonal_decompose(df, model = 'additive')
-    seasonal2 = decomposition2.seasonal
+    # seasonal2 = decomposition2.seasonal
     fig2 = decomposition2.plot()
     st.write(fig2)
     st.write('In this graph you can observe the presence of an annual seasonal component in the time series')
