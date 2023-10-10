@@ -4,6 +4,11 @@ import statsmodels.api as sm
 import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.graphics import tsaplots
+import numpy as np
+import scipy
+from scipy.stats import boxcox
+import matplotlib.pyplot as plt
+from scipy.stats import shapiro
 
 def decompose(data_pred):
     st.subheader("Decomposition plots of last 2 years")
@@ -40,6 +45,12 @@ def ts_test(data_pred):
     st.write(fig1)
     st.write(fig2)
 
+def first_dif(data):
+    data['shift_y'] = data['y'] - data['y'].shift(1)
+    data =data.dropna()
+    ts_test(data['shift_y'])
+
+
 def preprocessing(df):
     """_summary_
 Первичная загрузка данных должна подразумевать запрос на название столбца с датами и название столбца
@@ -66,7 +77,8 @@ def preprocessing(df):
     # Ресемплируем по дням и заполняем пропущенные предыдущими значением
     data_pred = data_pred.resample('d').mean()
     data_pred = data_pred.asfreq('d')
-    data_pred.fillna(method='ffill', inplace=True)
+    data_pred.ffill(inplace=True)
+    data_pred.bfill(inplace=True)
     data_pred = pd.DataFrame(data_pred["y"])
     return data_pred
 
@@ -107,6 +119,14 @@ def plot_fig(data_pred, v_period):
     st.plotly_chart(fig)
     return fig
 
+def hist_plot(series):
+    fig, ax = plt.subplots()
+    ax.hist(series, bins = 30)
+    st.pyplot(fig)
+    st.markdown('**Result of Shapiro-Wilk test for normality:**  ' +str(is_normal(shapiro(series))))
+    return fig
+
+
 def plot_Ohlc_fig(data_pred):
     df_ohlc = data_pred['y'].resample('10D').ohlc()
     fig = go.Figure(
@@ -122,3 +142,13 @@ def plot_Ohlc_fig(data_pred):
     st.plotly_chart(fig)
     st.write('On the graph you can see the period of greatest decline or rise in the values ​​of the target')
     return fig
+
+def is_normal(test, p_level=0.05):
+    _, pval = test
+    return 'Normal' if pval > 0.05 else 'Not Normal'
+
+def to_normal_dist(data):
+    data['y_sqrt'] = np.sqrt(data['y'])
+    data['y_log'] = np.log(data['y'])
+    data['y_boxcox'] = boxcox(data['y'], 0)
+    return data

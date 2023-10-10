@@ -196,14 +196,6 @@ Returns:
     st.plotly_chart(fig)
     fig = plt.figure()
 
-    # Считаем и выводим ошибку по последнему году
-    # test = all_forecasts['y'][len(all_forecasts)-365-period:len(all_forecasts)-period]
-    # y_pred = all_forecasts['y_prediction'][len(all_forecasts)-365-period:len(all_forecasts)-period]
-    # MAE = round(mean_absolute_error(test, y_pred),2)
-    # MAPE = round(mean_absolute_percentage_error(test, y_pred),2)
-    # st.markdown('**Mean absolute error of Prophet model for a period of one last year is** '+str(MAE))
-    # st.markdown('**Mean absolute percentage error of Prophet model for a period of one last year is** '+str(MAPE*100)+ ' %')
-
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
