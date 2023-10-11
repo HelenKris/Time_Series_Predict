@@ -89,9 +89,11 @@ def prophet_select(data_pred,period):
     # оцениваем модель по средней ошибке за предыдущий год, если прогнозируем на неделю, то оцениваем тоже по последней неделе.
     MAE = round(mean_absolute_error(test, y_pred),3)
     MAPE = round(mean_absolute_percentage_error(test, y_pred),3)
+    MSE = round(mean_squared_error(test, y_pred),3)
     st.markdown('**Mean absolute error of Prophet model for a period of '+str(period)+' days is** '+str(MAE))
     st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
-    return all_forecasts
+    st.markdown('**Mean squared error of Prophet model for a period of '+str(period)+' days is** '+str(MSE))
+    return MAE, MAPE, MSE
 
 
 def create_features(df):
@@ -106,12 +108,12 @@ def create_features(df):
 
     # Lagged features
     lag_list = [365]
-    # lag_list = [2, 7, 14, 30,60,90,365]
+    # lag_list = [2,5,14,30,60,90,365]
     for i in lag_list:
         df["lag_{}".format(i)] = df.y.shift(i)
 
     # Presidential term cycle feature
-    # df['presidential_term_cycle'] = df.index.year % 4  # Remainder of current year divided by 4
+    df['presidential_term_cycle'] = df.index.year % 4  # Remainder of current year divided by 4
     return df
 
 def XGB_select(feature_df,period):
@@ -153,10 +155,11 @@ Returns:
     y_pred  = all_forecasts['y_prediction'][len(all_forecasts)-period:]
     MAE = round(mean_absolute_error(y_test, y_pred),3)
     MAPE = round(mean_absolute_percentage_error(y_test, y_pred),3)
-    st.markdown('**Mean absolute error of XGBoost model for a period of one last year is** '+str(MAE))
+    MSE = round(mean_squared_error(y_test, y_pred),3)
+    st.markdown('**Mean absolute error of XGBoost model for a period of '+str(period)+' days is** '+str(MAE))
     st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
-
-    return all_forecasts
+    st.markdown('**Mean squared error of XGBoost model for a period of '+str(period)+' days is** '+str(MSE))
+    return MAE, MAPE, MSE
 
 
 
@@ -195,7 +198,6 @@ Returns:
     fig.add_trace(go.Scatter(x=all_forecasts[-v_period:].index, y=all_forecasts['y_prediction'][-v_period:], name="XGB_prediction",line_color='#e74c3c'))
     st.plotly_chart(fig)
     fig = plt.figure()
-
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
