@@ -42,8 +42,7 @@ if page == "Data loading and preprocessing":
         option = st.selectbox('Select dataset for prediction from database',dataset)
         DATA_URL =('./HISTORICAL_DATA/'+option+'.csv')
         df = pd.read_csv(DATA_URL)
-        if 'df' not in st.session_state:
-            st.session_state.df = df
+        st.session_state.df = df
 
     elif radio_btn == 'Download data from YAHOO':
         st.markdown('Download your data directly from [YAHOO](https://www.finance.yahoo.com). Just enter the company ticker, the start and the end of time period')
@@ -54,15 +53,13 @@ if page == "Data loading and preprocessing":
         df = df.reset_index()
         resuld = st.button('Apply')
         st.write('Data has been downloaded.')
-        if 'df' not in st.session_state:
-            st.session_state.df = df
+        st.session_state.df = df
 
     else:
         uploaded_data = st.file_uploader('Please upload data in format .csv', type = 'csv')
         if uploaded_data is not None:
             df = pd.read_csv(uploaded_data)
-            if 'df' not in st.session_state:
-                st.session_state.df = df
+            st.session_state.df = df
 
     df = st.session_state.df
     if st.checkbox('Show raw data'):
