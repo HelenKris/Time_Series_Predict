@@ -201,4 +201,4 @@ Returns:
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
-    return all_forecasts
+    # return all_forecasts
