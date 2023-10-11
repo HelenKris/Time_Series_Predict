@@ -47,7 +47,7 @@ if page == "Data loading and preprocessing":
 
     elif radio_btn == 'Download data from YAHOO':
         st.markdown('Download your data directly from [YAHOO](https://www.finance.yahoo.com). Just enter the company ticker, the start and the end of time period')
-        ticker = st.text_input("Enter a ticker symbol")
+        ticker = st.text_input("Enter a ticker symbol", 'GOOGL')
         start_time = st.date_input("Start of time period")
         end_time = st.date_input("End of time period")
         df = yf.download(ticker, start_time, end_time)
@@ -64,6 +64,7 @@ if page == "Data loading and preprocessing":
             if 'df' not in st.session_state:
                 st.session_state.df = df
 
+    df = st.session_state.df
     if st.checkbox('Show raw data'):
         st.subheader("This is your initial data.")
         st.write("Please select a page on the left.")
