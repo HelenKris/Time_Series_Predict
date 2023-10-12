@@ -70,7 +70,6 @@ def preprocessing(df):
     target_column = st.selectbox("Select target column", df.columns, index=1)
     data_column = st.selectbox("Select data column", df.columns, index=0)
     # Переименовываем колонки
-    # data_pred = df.reset_index()
     data_pred = df.copy()
     data_pred=data_pred.rename(columns={data_column: "ds", target_column: "y"})
     data_pred['ds'] = pd.to_datetime(data_pred['ds'], errors='coerce')

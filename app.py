@@ -153,7 +153,6 @@ elif page == "Prediction":
         if uploaded_data is not None:
             additional_data = pd.read_csv(uploaded_data)
             additional_features = add_features_preprocessing(additional_data)
-
     data_predict = data_pred.reset_index()
     MAE, MAPE, MSE = prophet_select(data_predict,period)
     st.session_state.predict_period = period
@@ -176,7 +175,8 @@ elif page == "Prediction":
     st.session_state.XGB_MAE = MAE
     st.session_state.XGB_MSE = MSE
     st.header("Forecasting with XGBoost")
-    XGB_predict(feature_df,period)
+    st.session_state.feature_df = feature_df
+    XGB_predict(st.session_state.feature_df,period)
 
 elif page == 'Conclusions':
     st.header("Сonclusions from time series analysis and prediction results")
