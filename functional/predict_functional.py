@@ -147,10 +147,9 @@ Returns:
     fig.add_trace(go.Scatter(x=train.index, y=train['y'], name="True value",line_color='deepskyblue'))
     fig.add_trace(go.Scatter(x=test.index, y=test['y'], name="True value of test period",line_color='royalblue'))
     fig.add_trace(go.Scatter(x=y_hat_gxb.index, y=y_hat_gxb['y_prediction'], name="Predicted values",line_color='#e74c3c'))
+    fig.layout.update(xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
-    fig = plt.figure()
-
-    # Считаем и выводим ошибку по последнему году
+    # Считаем и выводим ошибку
     y_test = test['y'][:-period]
     y_pred  = all_forecasts['y_prediction'][len(all_forecasts)-period:]
     MAE = round(mean_absolute_error(y_test, y_pred),3)
@@ -160,9 +159,6 @@ Returns:
     st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
     st.markdown('**Mean squared error of XGBoost model for a period of '+str(period)+' days is** '+str(MSE))
     return MAE, MAPE, MSE
-
-
-
 
 def XGB_predict(feature_df,period):
     """""_summary_""
@@ -177,27 +173,21 @@ Returns:
     _type_: _description_
 """
     train = feature_df[:-period]
-    test = feature_df[-period:]
-    FEATUREAS_df = feature_df.drop(['y', 'yhat'], axis = 1)
-    FEATUREAS = FEATUREAS_df.columns
-    TARGET = 'y'
+    FEATUREAS = list(feature_df.columns)
+    columns_to_delete = ['y', 'yhat']
+    FEATUREAS = [x for x in FEATUREAS if x not in columns_to_delete]
     X_train = train[FEATUREAS]
-    y_train = train[TARGET]
-
+    y_train = train['y']
     reg = xgb.XGBRegressor(n_estimators = 1000, early_stopping_rounds = 50, learning_rate = 0.01)
     reg.fit(X_train, y_train, eval_set=[(X_train,y_train)], verbose = 0)
     y_hat_gxb = pd.DataFrame(reg.predict(feature_df[FEATUREAS]), index=feature_df.index, columns=['y_prediction'])
-    all_forecasts = feature_df.drop(FEATUREAS, axis = 1)
-    all_forecasts = pd.merge(all_forecasts,y_hat_gxb, on='ds', how='right')
-    # Построим графики и посчитаем ошибку
+
     st.subheader('Forecasting of target for a period of '+str(period)+' days by XGBRegressor')
-    n_months = st.slider('Period of visualization in months:', 1,round(len(all_forecasts)/30),0)
-    v_period = n_months * 30
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=all_forecasts[-v_period:].index, y=all_forecasts['y'][-v_period:], name="True value",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=all_forecasts[-v_period:].index, y=all_forecasts['y_prediction'][-v_period:], name="XGB_prediction",line_color='#e74c3c'))
+    fig.add_trace(go.Scatter(x=feature_df.index, y=feature_df['y'], name="True value",line_color='deepskyblue'))
+    fig.add_trace(go.Scatter(x=y_hat_gxb.index, y=y_hat_gxb['y_prediction'], name="XGB_prediction",line_color='#e74c3c'))
+    fig.layout.update(xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
-    fig = plt.figure()
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
