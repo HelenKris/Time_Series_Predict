@@ -38,7 +38,7 @@ if page == "Data loading and preprocessing":
     radio_btn = st.radio('Select data source: ', options = ('Select data from local database','Download data from YAHOO', 'Upload my own data'), index = 0)
 
     if radio_btn == 'Select data from local database':
-        dataset = ('BA_data','NOC_data','RTX_data', 'data_MW', 'data_weather')
+        dataset = ('BA_data','NOC_data', 'data_MW', 'data_weather')
         option = st.selectbox('Select dataset for prediction from database',dataset)
         DATA_URL =('./HISTORICAL_DATA/'+option+'.csv')
         df = pd.read_csv(DATA_URL)
