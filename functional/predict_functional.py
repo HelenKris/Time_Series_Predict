@@ -201,16 +201,16 @@ Returns:
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
     return y_hat_gxb
 
-def getdata(data_x, data_y, lookback):
+def getdata(data, data_x, data_y, lookback):
     start_shift = 365
     X, Y = [], []
-    for i in range(len(data_x) - lookback + 1 - start_shift):
+    for i in range(len(data) - lookback + 1 - start_shift):
         X.append(data_x[i:i+lookback])
         Y.append(data_y[i+lookback-1])
     return np.array(X), np.array(Y).reshape(-1, 1)
 
 def GRU_predict(feature_df,period, num_epochs):
-
+    st.write(feature_df)
     # train = feature_df[:-period]
     FEATUREAS = list(feature_df.columns)
     columns_to_delete = ['y', 'yhat']
@@ -226,24 +226,43 @@ def GRU_predict(feature_df,period, num_epochs):
     scaler_y = StandardScaler()
     x_scaled = scaler_x.fit_transform(feature_df[FEATUREAS][start_shift:])
     y_scaled = scaler_y.fit_transform(feature_df[y_columns][start_shift:])
+    st.write(len(x_scaled))
     lookback = 10
-    x, y = getdata(x_scaled, y_scaled, lookback)
+    x, y = getdata(feature_df, x_scaled, y_scaled, lookback)
     x = x.reshape(x.shape[0], x.shape[1], x.shape[2])
+    st.write(x.shape)
+    st.write(y.shape)
     batch_size=1
     model = Sequential()
     model.add(GRU(10, stateful=True, batch_input_shape=(batch_size, x.shape[1], x.shape[2])))
     model.add(Dense(1))
     model.compile(loss='mean_squared_error',optimizer='adam')
-    model.fit(x[:-period], y[:-period], epochs=num_epochs, batch_size=batch_size)
-    y_test = scaler_y.inverse_transform(y[:])
-    forecast = scaler_y.inverse_transform(model.predict(x[:], batch_size=batch_size))
-    y_hat = forecast.squeeze()
+    model.fit(x[:-365], y[:-365], epochs=num_epochs, batch_size=batch_size)
+    y_test = pd.DataFrame(scaler_y.inverse_transform(y[:]))
+    forecast = pd.DataFrame(scaler_y.inverse_transform(model.predict(x[:], batch_size=batch_size)))
+    y_hat = pd.Series(forecast.squeeze())
+    index=pd.Series(feature_df[period+lookback-1:].index)
+    st.write(len(y_hat))
+    st.write(y_hat)
     # ValueError: Shape of passed values is (2087, 1), indices imply (2452, 1)
-    GRU_forecast = pd.DataFrame(y_hat,index=feature_df[2*period+lookback-1:].index,columns=['RNN_prediction'])
+    GRU_forecast = pd.DataFrame(pd.concat([index, y_hat], axis=1)).set_index('ds')
+    GRU_forecast.rename(columns={0: 'RNN_prediction'}, inplace=True)
+    # RNN_forecast = pd.DataFrame(y_hat,index=feature_df[period+lookback-1:].index,columns=['RNN_prediction'])
+    # RNN_forecast = pd.DataFrame(y_hat,index=feature_df[period+lookback-1:].index,columns=['RNN_prediction'])
+    # index=feature_df[period+lookback-1:].index
+    # st.write(index)
+    st.write(GRU_forecast)
+    # GRU_forecast = pd.DataFrame(y_hat,index=feature_df[period+lookback-1:].index,columns=['RNN_prediction'])
+    plot_GRU_forecast = pd.merge(feature_df,GRU_forecast, on='ds', how='right')
+    st.write(plot_GRU_forecast)
     st.subheader('Forecasting of target for a period of '+str(period)+' days by recurrent neural networks with GRU')
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=GRU_forecast.index, y=GRU_forecast['RNN_prediction'], name="['GRU prediction']",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=feature_df.index, y=feature_df['y'], name="True value",line_color='#e74c3c'))
+    # fig.add_trace(go.Scatter(x=y_test.index, y=y_test, name="['GRU prediction']",line_color='deepskyblue'))
+    # fig.add_trace(go.Scatter(x=forecast.index, y=forecast, name="True value",line_color='#e74c3c'))
+    fig.add_trace(go.Scatter(x=plot_GRU_forecast.index, y=plot_GRU_forecast['RNN_prediction'], name="['GRU prediction']",line_color='deepskyblue'))
+    fig.add_trace(go.Scatter(x=plot_GRU_forecast.index, y=plot_GRU_forecast['y'], name="True value",line_color='#e74c3c'))
     fig.layout.update(xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
+    # st.write(GRU_forecast)
+    st.write(plot_GRU_forecast)
     return GRU_forecast

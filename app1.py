@@ -162,34 +162,37 @@ elif page == "Prediction":
     # st.session_state.prophet_MAPE = MAPE
     # st.session_state.prophet_MAE = MAE
     # st.session_state.prophet_MSE = MSE
-
+    st.write(len(data_pred))
     st.header("Data Prediction")
     st.header("Forecasting with Prophet")
     all_forecasts = prophet(data_predict,period)
     Prophet_forecast = pd.DataFrame(all_forecasts['yhat'], index=all_forecasts.index)
+    st.write(len(Prophet_forecast))
     st.write(Prophet_forecast)
-
 
     st.markdown('---')
     feature_df = create_features(all_forecasts)
+    st.write(len(feature_df))
     # Объединяем загруженные признаки с дополнительным созданным признаковом пространством\
     if agree1 or agree2:
         feature_df = pd.merge(feature_df,additional_features, on='ds', how='left')
-
+    st.write(len(feature_df))
     # st.header('Model: XGBoost. Test period: '+str(period)+' days')
     # MAE, MAPE, MSE = XGB_select(feature_df,period)
     # st.session_state.XGB_MAPE = MAPE
     # st.session_state.XGB_MAE = MAE
     # st.session_state.XGB_MSE = MSE
     st.header("Forecasting with XGBoost")
-    st.session_state.feature_df = feature_df
-    y_hat_gxb = XGB_predict(st.session_state.feature_df,period)
+    # st.session_state.feature_df = feature_df
+    y_hat_gxb = XGB_predict(feature_df,period)
+    st.write(len(y_hat_gxb))
     st.write(y_hat_gxb)
+    st.write(len(feature_df))
     load_GRU_state = st.text('Please,wait. GRU model is working...')
-    GRU_forecast = GRU_predict(st.session_state.feature_df,period,num_epochs=5)
+    GRU_forecast = GRU_predict(feature_df,period=period,num_epochs=1)
     load_GRU_state.text('GRU model is done!')
     all_models_forecasts = pd.merge(y_hat_gxb,GRU_forecast, on='ds', how='right')
-    # st.write(all_models_forecasts)
+    st.write(all_models_forecasts)
     all_models_forecasts = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
     # st.write(all_models_forecasts1)
     # st.write(data_pred)

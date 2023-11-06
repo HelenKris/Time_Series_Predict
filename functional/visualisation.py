@@ -66,6 +66,7 @@ option = {
 st_echarts(options=option, height="600px")
 
 def plot_predictictions(all_models_forecasts, period):
+    #Блок рассчета метрик
     test = all_models_forecasts[-2*period:]['y']
     y_hat_gxb = all_models_forecasts[-2*period:]['y_prediction']
     y_hat_RNN = all_models_forecasts[-2*period:]['RNN_prediction']
@@ -76,14 +77,18 @@ def plot_predictictions(all_models_forecasts, period):
     MAE_RNN = round(mean_absolute_error(test[-2*period:-period], y_hat_RNN[-2*period:-period]),3)
     r2_score_Prophet = round(r2_score(test[-2*period:-period], y_hat_Prophet[-2*period:-period]),3)
     MAE_Prophet = round(mean_absolute_error(test[-2*period:-period], y_hat_Prophet[-2*period:-period]),3)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['y'], name="True value",line_color='#e74c3c'))
-    fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['y_prediction'], name="XGB model prediction",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['RNN_prediction'], name="GUN model prediction'",line_color='royalblue'))
-    fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['yhat'], name="Prophet model prediction'",line_color='#ff9c24'))
-    fig.layout.update(xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
-    # st.markdown('**R2 score of XGBoost model is** ' +str(r2_score_xgb)+ ' **daily observations**')
+    # Блок формирования файла Json для визуализации
+
+
+
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['y'], name="True value",line_color='#e74c3c'))
+    # fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['y_prediction'], name="XGB model prediction",line_color='deepskyblue'))
+    # fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['RNN_prediction'], name="GUN model prediction'",line_color='royalblue'))
+    # fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['yhat'], name="Prophet model prediction'",line_color='#ff9c24'))
+    # fig.layout.update(xaxis_rangeslider_visible=True)
+    # st.plotly_chart(fig)
+
     st.markdown('**R2 score of XGBoost model is** ' +str(r2_score_xgb))
     st.markdown('**R2 score of GUN model is** ' +str(r2_score_RNN))
     st.markdown('**R2 score of Prophet model is** ' +str(r2_score_Prophet))
