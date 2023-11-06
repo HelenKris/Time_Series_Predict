@@ -1,10 +1,19 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 from prophet import Prophet
 from sklearn.metrics import mean_squared_error, mean_absolute_error,mean_absolute_percentage_error
 import xgboost as xgb
 import matplotlib.pyplot as plt
+import os
+from sklearn.preprocessing import StandardScaler
+from tensorflow import keras
+from keras.models import Sequential
+from keras.layers import Dense, GRU
+
+
+# os.environ['CMDSTAN'] = "C:/Users/38/anaconda3/Library/bin/cmdstan"
 
 def plot_predict_data(data, v_period, col_name_target, col_name_predict):
     fig = go.Figure()
@@ -49,49 +58,50 @@ def prophet(data_pred,period):
         st.subheader('forecast data')
         st.write(forecast)
     all_forecasts = pd.DataFrame(all_forecasts[['y','yhat']])
+    # Prophet_forecast = pd.DataFrame(all_forecasts['yhat'], index=all_forecasts.index)
     return all_forecasts
 
-def prophet_select(data_pred,period):
-    """""_summary_""
+# def prophet_select(data_pred,period):
+#     """""_summary_""
 
-    Args:
-        data_pred (_type_): _description_
-        period (_type_): _description_
+#     Args:
+#         data_pred (_type_): _description_
+#         period (_type_): _description_
 
-    Returns:
-    Возвращает датафрейм с индексом ds для конкатинации и столбцом у (содержат NaN в прогнозах)
-    и столбцом 'yhat' - предсказаниями модели.
-        _type_: _description_
-    """
-    m = Prophet()
-    train_df = data_pred[:-period]
-    m.fit(train_df)
-    future = m.make_future_dataframe(periods=period)
-    forecast = m.predict(future)
+#     Returns:
+#     Возвращает датафрейм с индексом ds для конкатинации и столбцом у (содержат NaN в прогнозах)
+#     и столбцом 'yhat' - предсказаниями модели.
+#         _type_: _description_
+#     """
+#     m = Prophet()
+#     train_df = data_pred[:-period]
+#     m.fit(train_df)
+#     future = m.make_future_dataframe(periods=period)
+#     forecast = m.predict(future)
 
-    st.header('Model: Prophet. Test period: '+str(period)+' days')
-    stock_price_forecast = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
-    all_forecasts = pd.merge(train_df,stock_price_forecast, on='ds', how='right')
-    all_forecasts = all_forecasts.set_index('ds')
-    test = data_pred['y'][len(data_pred)- period:]
-    y_pred = stock_price_forecast['yhat'][len(data_pred)- period:]
+#     st.header('Model: Prophet. Test period: '+str(period)+' days')
+#     stock_price_forecast = forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']]
+#     all_forecasts = pd.merge(train_df,stock_price_forecast, on='ds', how='right')
+#     all_forecasts = all_forecasts.set_index('ds')
+#     test = data_pred['y'][len(data_pred)- period:]
+#     y_pred = stock_price_forecast['yhat'][len(data_pred)- period:]
 
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data_pred.ds, y=data_pred['y'], name="True value",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=data_pred['ds'][len(data_pred)- period:], y=data_pred['y'][len(data_pred)- period:], name="True value of test period",line_color='royalblue'))
-    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=stock_price_forecast['yhat'], name="Predicted values",line_color='#e74c3c'))
-    fig.layout.update(xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter(x=data_pred.ds, y=data_pred['y'], name="True value",line_color='deepskyblue'))
+#     fig.add_trace(go.Scatter(x=data_pred['ds'][len(data_pred)- period:], y=data_pred['y'][len(data_pred)- period:], name="True value of test period",line_color='royalblue'))
+#     fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=stock_price_forecast['yhat'], name="Predicted values",line_color='#e74c3c'))
+#     fig.layout.update(xaxis_rangeslider_visible=True)
+#     st.plotly_chart(fig)
 
-    # Логика оценки: мы оцениваем модель по такому же интервалу, по которому прогназируем. Т.е. если хотим прогнозировать на год, то
-    # оцениваем модель по средней ошибке за предыдущий год, если прогнозируем на неделю, то оцениваем тоже по последней неделе.
-    MAE = round(mean_absolute_error(test, y_pred),3)
-    MAPE = round(mean_absolute_percentage_error(test, y_pred),3)
-    MSE = round(mean_squared_error(test, y_pred),3)
-    st.markdown('**Mean absolute error of Prophet model for a period of '+str(period)+' days is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
-    st.markdown('**Mean squared error of Prophet model for a period of '+str(period)+' days is** '+str(MSE))
-    return MAE, MAPE, MSE
+#     # Логика оценки: мы оцениваем модель по такому же интервалу, по которому прогназируем. Т.е. если хотим прогнозировать на год, то
+#     # оцениваем модель по средней ошибке за предыдущий год, если прогнозируем на неделю, то оцениваем тоже по последней неделе.
+#     MAE = round(mean_absolute_error(test, y_pred),3)
+#     MAPE = round(mean_absolute_percentage_error(test, y_pred),3)
+#     MSE = round(mean_squared_error(test, y_pred),3)
+#     st.markdown('**Mean absolute error of Prophet model for a period of '+str(period)+' days is** '+str(MAE))
+#     st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
+#     st.markdown('**Mean squared error of Prophet model for a period of '+str(period)+' days is** '+str(MSE))
+#     return MAE, MAPE, MSE
 
 
 def create_features(df):
@@ -115,50 +125,50 @@ def create_features(df):
     return df
 
 
-def XGB_select(feature_df,period):
-    """""_summary_""
+# def XGB_select(feature_df,period):
+#     """""_summary_""
 
-Args:
-    feature_df (_type_):обогащенный дополнительными признаками датасет c целевым признаком и предсказаниями Prohet
-    period (_type_): n_months, указанный пользователем в st.slider('Months of prediction:'), умноженный на 30
+# Args:
+#     feature_df (_type_):обогащенный дополнительными признаками датасет c целевым признаком и предсказаниями Prohet
+#     period (_type_): n_months, указанный пользователем в st.slider('Months of prediction:'), умноженный на 30
 
-Returns:
-    MAE, MAPE, MSE
-    _type_: _description_
-"""
+# Returns:
+#     MAE, MAPE, MSE
+#     _type_: _description_
+# """
 
-    train = feature_df[:-2*period]
-    test = feature_df[len(feature_df)-2*period:]
-    FEATUREAS = list(feature_df.columns)
-    columns_to_delete = ['y', 'yhat']
-    FEATUREAS = [x for x in FEATUREAS if x not in columns_to_delete]
-    X_train = train[FEATUREAS]
-    y_train = train['y']
-    y_test = test['y']
-    reg = xgb.XGBRegressor(n_estimators = 1000, early_stopping_rounds = 50, learning_rate = 0.01)
-    reg.fit(X_train, y_train, eval_set=[(X_train,y_train)], verbose = 0)
-    y_hat_gxb = pd.DataFrame(reg.predict(feature_df[FEATUREAS][:-period]), index=feature_df[:-period].index, columns=['y_prediction'])
-    # all_forecasts = feature_df.drop(FEATUREAS, axis = 1)
-    # all_forecasts = pd.merge(all_forecasts,y_hat_gxb, on='ds', how='right')
-    # Построим графики и посчитаем ошибку
-    st.subheader('Forecasting of target for a period of '+str(period)+' days by XGBRegressor')
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=train.index, y=train['y'], name="True value",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=test.index, y=test['y'], name="True value of test period",line_color='royalblue'))
-    fig.add_trace(go.Scatter(x=y_hat_gxb.index, y=y_hat_gxb['y_prediction'], name="Predicted values",line_color='#e74c3c'))
-    fig.layout.update(xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
-    # Считаем и выводим ошибку
-    y_test = test['y'][:-period]
-    # y_pred  = all_forecasts['y_prediction'][len(all_forecasts)-period:]
-    y_pred  = y_hat_gxb['y_prediction'][len(y_hat_gxb)-period:]
-    MAE = round(mean_absolute_error(y_test, y_pred),3)
-    MAPE = round(mean_absolute_percentage_error(y_test, y_pred),3)
-    MSE = round(mean_squared_error(y_test, y_pred),3)
-    st.markdown('**Mean absolute error of XGBoost model for a period of '+str(period)+' days is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
-    st.markdown('**Mean squared error of XGBoost model for a period of '+str(period)+' days is** '+str(MSE))
-    return MAE, MAPE, MSE
+#     train = feature_df[:-2*period]
+#     test = feature_df[len(feature_df)-2*period:]
+#     FEATUREAS = list(feature_df.columns)
+#     columns_to_delete = ['y', 'yhat']
+#     FEATUREAS = [x for x in FEATUREAS if x not in columns_to_delete]
+#     X_train = train[FEATUREAS]
+#     y_train = train['y']
+#     y_test = test['y']
+#     reg = xgb.XGBRegressor(n_estimators = 1000, early_stopping_rounds = 50, learning_rate = 0.01)
+#     reg.fit(X_train, y_train, eval_set=[(X_train,y_train)], verbose = 0)
+#     y_hat_gxb = pd.DataFrame(reg.predict(feature_df[FEATUREAS][:-period]), index=feature_df[:-period].index, columns=['y_prediction'])
+#     # all_forecasts = feature_df.drop(FEATUREAS, axis = 1)
+#     # all_forecasts = pd.merge(all_forecasts,y_hat_gxb, on='ds', how='right')
+#     # Построим графики и посчитаем ошибку
+#     st.subheader('Forecasting of target for a period of '+str(period)+' days by XGBRegressor')
+#     fig = go.Figure()
+#     fig.add_trace(go.Scatter(x=train.index, y=train['y'], name="True value",line_color='deepskyblue'))
+#     fig.add_trace(go.Scatter(x=test.index, y=test['y'], name="True value of test period",line_color='royalblue'))
+#     fig.add_trace(go.Scatter(x=y_hat_gxb.index, y=y_hat_gxb['y_prediction'], name="Predicted values",line_color='#e74c3c'))
+#     fig.layout.update(xaxis_rangeslider_visible=True)
+#     st.plotly_chart(fig)
+#     # Считаем и выводим ошибку
+#     y_test = test['y'][:-period]
+#     # y_pred  = all_forecasts['y_prediction'][len(all_forecasts)-period:]
+#     y_pred  = y_hat_gxb['y_prediction'][len(y_hat_gxb)-period:]
+#     MAE = round(mean_absolute_error(y_test, y_pred),3)
+#     MAPE = round(mean_absolute_percentage_error(y_test, y_pred),3)
+#     MSE = round(mean_squared_error(y_test, y_pred),3)
+#     st.markdown('**Mean absolute error of XGBoost model for a period of '+str(period)+' days is** '+str(MAE))
+#     st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(period)+' days is** '+str(MAPE*100)+ ' %')
+#     st.markdown('**Mean squared error of XGBoost model for a period of '+str(period)+' days is** '+str(MSE))
+#     return MAE, MAPE, MSE
 
 def XGB_predict(feature_df,period):
     """""_summary_""
@@ -180,7 +190,6 @@ Returns:
     reg = xgb.XGBRegressor(n_estimators = 1000, early_stopping_rounds = 50, learning_rate = 0.01)
     reg.fit(X_train, y_train, eval_set=[(X_train,y_train)], verbose = 0)
     y_hat_gxb = pd.DataFrame(reg.predict(feature_df[FEATUREAS]), index=feature_df.index, columns=['y_prediction'])
-
     st.subheader('Forecasting of target for a period of '+str(period)+' days by XGBRegressor')
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=feature_df.index, y=feature_df['y'], name="True value",line_color='deepskyblue'))
@@ -190,4 +199,51 @@ Returns:
     FI = pd.DataFrame(data = reg.feature_importances_, index = reg.feature_names_in_, columns = ['Importances'])
     st.subheader('Feature importances by XGBoost Model')
     st.bar_chart(FI.sort_values('Importances',ascending = False)[:10])
-    # return all_forecasts
+    return y_hat_gxb
+
+def getdata(data_x, data_y, lookback):
+    start_shift = 365
+    X, Y = [], []
+    for i in range(len(data_x) - lookback + 1 - start_shift):
+        X.append(data_x[i:i+lookback])
+        Y.append(data_y[i+lookback-1])
+    return np.array(X), np.array(Y).reshape(-1, 1)
+
+def GRU_predict(feature_df,period, num_epochs):
+
+    # train = feature_df[:-period]
+    FEATUREAS = list(feature_df.columns)
+    columns_to_delete = ['y', 'yhat']
+    FEATUREAS = [x for x in FEATUREAS if x not in columns_to_delete]
+    y_columns = ["y"]
+    # X_train = train[FEATUREAS]
+    # y_train = train['y']
+    # reg = xgb.XGBRegressor(n_estimators = 1000, early_stopping_rounds = 50, learning_rate = 0.01)
+    # reg.fit(X_train, y_train, eval_set=[(X_train,y_train)], verbose = 0)
+    # y_hat_gxb = pd.DataFrame(reg.predict(feature_df[FEATUREAS]), index=feature_df.index, columns=['y_prediction'])
+    start_shift = 365
+    scaler_x = StandardScaler()
+    scaler_y = StandardScaler()
+    x_scaled = scaler_x.fit_transform(feature_df[FEATUREAS][start_shift:])
+    y_scaled = scaler_y.fit_transform(feature_df[y_columns][start_shift:])
+    lookback = 10
+    x, y = getdata(x_scaled, y_scaled, lookback)
+    x = x.reshape(x.shape[0], x.shape[1], x.shape[2])
+    batch_size=1
+    model = Sequential()
+    model.add(GRU(10, stateful=True, batch_input_shape=(batch_size, x.shape[1], x.shape[2])))
+    model.add(Dense(1))
+    model.compile(loss='mean_squared_error',optimizer='adam')
+    model.fit(x[:-period], y[:-period], epochs=num_epochs, batch_size=batch_size)
+    y_test = scaler_y.inverse_transform(y[:])
+    forecast = scaler_y.inverse_transform(model.predict(x[:], batch_size=batch_size))
+    y_hat = forecast.squeeze()
+    # ValueError: Shape of passed values is (2087, 1), indices imply (2452, 1)
+    GRU_forecast = pd.DataFrame(y_hat,index=feature_df[2*period+lookback-1:].index,columns=['RNN_prediction'])
+    st.subheader('Forecasting of target for a period of '+str(period)+' days by recurrent neural networks with GRU')
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=GRU_forecast.index, y=GRU_forecast['RNN_prediction'], name="['GRU prediction']",line_color='deepskyblue'))
+    fig.add_trace(go.Scatter(x=feature_df.index, y=feature_df['y'], name="True value",line_color='#e74c3c'))
+    fig.layout.update(xaxis_rangeslider_visible=True)
+    st.plotly_chart(fig)
+    return GRU_forecast
