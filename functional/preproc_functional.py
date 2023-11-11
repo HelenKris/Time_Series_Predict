@@ -17,12 +17,18 @@ def decompose(data_pred):
     seasonal = decomposition.seasonal
     fig = decomposition.plot()
     st.write(fig)
-    st.subheader("Seasonal decomposition of resampled data by months ")
-    df = data_pred['y'].resample('m').mean().dropna()
-    decomposition2 = seasonal_decompose(df, model = 'additive')
-    fig2 = decomposition2.plot()
-    st.write(fig2)
-    st.write('In this graph you can observe the presence of an annual seasonal component in the time series')
+    # st.subheader("Seasonal decomposition of resampled data by months ")
+    # df = data_pred['y'].resample('m').mean().dropna()
+    try:
+        st.subheader("Seasonal decomposition of resampled data by months ")
+        df = data_pred['y'].resample('m').mean().dropna()
+        decomposition2 = seasonal_decompose(df, model = 'additive')
+        fig2 = decomposition2.plot()
+        st.write(fig2)
+        st.write('In this graph you can observe the presence of an annual seasonal component in the time series')
+    except Exception as e:
+        st.write("It is impossible to decompose resampled data because there is not enough data.")
+
 
 
 def ts_test(data_pred):
@@ -54,7 +60,7 @@ def first_dif(data):
     addfuller_test, KPSS_test = ts_test(data['shift_y'])
     return addfuller_test, KPSS_test
 
-def preprocessing(df):
+def preprocessing(df,target_column,data_column):
     """_summary_
 Первичная загрузка данных должна подразумевать запрос на название столбца с датами и название столбца
 с целевым признаком и установкой в качестве индекса столбца с датой (переименовать в 'ds' и 'y' как того требует  Prophet).
@@ -67,8 +73,8 @@ def preprocessing(df):
     Returns:
         data_pred after preprocessing
     """
-    target_column = st.selectbox("Select target column", df.columns, index=1)
-    data_column = st.selectbox("Select data column", df.columns, index=0)
+    # target_column = st.selectbox("Select target column", df.columns, index=1)
+    # data_column = st.selectbox("Select data column", df.columns, index=0)
     # Переименовываем колонки
     data_pred = df.copy()
     data_pred=data_pred.rename(columns={data_column: "ds", target_column: "y"})
@@ -130,12 +136,17 @@ def seson_conclusion(days_peek, week_peek, months_peek, year_peek):
         st.markdown('**The time series contains a cycle, which is repeated every** ' +str(week_peek)+ ' weeks.')
         if week_peek == 52:
             st.markdown('**This seasonality is called annual')
+        elif 11<=week_peek<=14:
+            st.markdown('**The time series appears to have inter-quarter seasonality')
+
     else:
         st.markdown('**The time series does not have a cyclicity of several weeks.**')
     if months_peek is not None:
         st.markdown('**The time series contains a cycle, which is repeated every** ' +str(months_peek)+ ' months.')
         if months_peek == 12:
             st.markdown('**This seasonality is called annual**')
+        elif 11<=months_peek<=14:
+            st.markdown('**The time series appears to have annual seasonality')
     else:
         st.markdown('**The time series does not have a cyclicity of several months.**')
     if year_peek is not None:
@@ -163,12 +174,12 @@ def find_sesonality(data_pred):
     year_peek = round(len(year_series) / len(peak_data_year)) if len(peak_data_year) else None
     st.subheader("Visualization of daytime observations of raw data")
     plot_fig(day_series)
-    st.subheader("Visualization of weekly observations of data")
-    plot_fig(week_series)
+    # st.subheader("Visualization of weekly observations of data")
+    # plot_fig(week_series)
     st.subheader("Visualization of monthly observations of raw data")
     plot_fig(months_series)
-    st.subheader("Visualization of annual observations of raw data")
-    plot_fig(year_series)
+    # st.subheader("Visualization of annual observations of raw data")
+    # plot_fig(year_series)
     seson_conclusion(days_peek, week_peek, months_peek, year_peek)
     return (days_peek, week_peek, months_peek, year_peek)
 

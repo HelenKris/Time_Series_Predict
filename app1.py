@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 from functional.preproc_functional import seson_conclusion,find_sesonality, first_dif, hist_plot, decompose, ts_test, preprocessing, plot_fig,plot_Ohlc_fig,add_features_preprocessing,to_normal_dist, is_normal
-from functional.predict_functional import GRU_select, GRU_predict, prophet, create_features, XGB_predict, prophet_select,XGB_select
+from functional.predict_functional import prophet_nural_predict, prophet_nural_select, GRU_select, GRU_predict, prophet, create_features, XGB_predict, prophet_select,XGB_select
 import yfinance as yf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from functional.visualisation import plot_predictictions
+from functional.visualisation import plot_predictictions,plot_mean_prediction
 
 plt.style.use('https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-light.mplstyle')
 
@@ -69,26 +69,33 @@ if page == "Data loading and preprocessing":
         st.write(df)
 
     st.markdown('---')
+    target_column = st.selectbox("Select target column", df.columns, index=1)
+    data_column = st.selectbox("Select data column", df.columns, index=0)
+    st.session_state.target_column = target_column
+    st.session_state.data_column = data_column
 
-    st.subheader("Data for preprocessing")
-    data_pred = preprocessing(df)
-
+    agree = st.checkbox('Show data after preprocessing')
+    if agree:
+        try:
+            data_pred = preprocessing(df,target_column,data_column)
+            st.session_state.data_pred = data_pred
+            st.subheader('Your data after preprocessing')
+            st.write("Please select a page on the left.")
+            st.write(data_pred)
+        except Exception as e:
+            st.write("Select the correct date and target column!")
+    st.session_state.agree = agree
     st.markdown('---')
-
-    if st.checkbox('Show data after preprocessing'):
-        st.subheader('Your data after preprocessing')
-        st.write("Please select a page on the left.")
-        st.write(data_pred)
-
-    st.markdown('---')
-
-    st.session_state.data_pred = data_pred
 
 
 elif page == "Exploration":
     st.header("Data exploration")
     st.markdown('---')
-    data_pred = st.session_state.data_pred
+    if st.session_state.agree:
+        data_pred = st.session_state.data_pred
+    else:
+        data_pred = preprocessing(st.session_state.df, st.session_state.target_column,st.session_state.data_column)
+
     max_date = data_pred.index.max()
     min_date = data_pred.index.min()
     st.markdown('**Data are presented for the period from** '+str(min_date)+' to '+str(max_date))
@@ -157,7 +164,7 @@ elif page == "Prediction":
             additional_data = pd.read_csv(uploaded_data)
             additional_features = add_features_preprocessing(additional_data)
     data_predict = data_pred.reset_index()
-
+    st.session_state.data_predict = data_predict
     prophet_dict = prophet_select(data_predict,period)
     # st.session_state.predict_period = period
     # st.session_state.prophet_MAPE = MAPE
@@ -168,7 +175,9 @@ elif page == "Prediction":
     st.header("Forecasting with Prophet")
     all_forecasts = prophet(data_predict,period)
     Prophet_forecast = pd.DataFrame(all_forecasts['yhat'], index=all_forecasts.index)
-    # st.write(Prophet_forecast)
+    # if st.checkbox('Show Prophet forecast data', key = "Prophet"):
+    #     st.subheader('forecast data')
+    st.write(Prophet_forecast)
 
     st.markdown('---')
     feature_df = create_features(all_forecasts,period)
@@ -180,9 +189,13 @@ elif page == "Prediction":
     st.header("Forecasting with XGBoost")
     # st.session_state.feature_df = feature_df
     y_hat_gxb = XGB_predict(feature_df,period)
-    st.header('Model: recurrent neural networks with GRU. Test period: '+str(period)+' days')
+    # if st.checkbox('Show XGBoost forecast data', key = "xgb"):
+    #     st.subheader('forecast data')
+    st.write(y_hat_gxb)
     # n_epochs = st.number_input('Number of epochs for GRU model training',value=5, key = "num_select_epochs")
     # load_GRU_state = st.text('Please,wait. GRU model is training...')
+
+    st.header('Model: recurrent neural networks with GRU. Test period: '+str(period)+' days')
     gru_dict = GRU_select(feature_df,period=period, num_epochs = 300)
     # load_GRU_state.text('GRU model is done!')
 
@@ -190,23 +203,46 @@ elif page == "Prediction":
     # load_GRU_state = st.text('Please,wait. GRU model is working...')
     # n_epochs = st.number_input('Number of epochs for GRU model training',value=5, key = "num_epochs")
     GRU_forecast = GRU_predict(feature_df,period=period,num_epochs=300)
-    # load_GRU_state.text('GRU model is done!')
+    # if st.checkbox('Show GRU forecast data', key = "gru"):
+    #     st.subheader('forecast data')
+    st.write(GRU_forecast)
 
-    all_errors = pd.DataFrame({'Prophet model':pd.Series(prophet_dict),'XGBoost model':pd.Series(xgb_dict),'GRU model':pd.Series(gru_dict)})
+    st.header('Model: NeuralProphet. Test period: '+str(period)+' days')
+    neural_prophet_dict = prophet_nural_select(st.session_state.data_predict,period)
+    st.header('Model: Nural Prophet. Forecasting period: '+str(period)+' days')
+    nutal_forecast = prophet_nural_predict(data_predict,period)
+    # if st.checkbox('Show Prophet Nural forecast data', key = "nural"):
+    #     st.subheader('forecast data')
+    st.write(nutal_forecast)
+    all_errors = pd.DataFrame({'Prophet model':pd.Series(prophet_dict),'Nural Prophet model':pd.Series(neural_prophet_dict),'XGBoost model':pd.Series(xgb_dict),'GRU model':pd.Series(gru_dict)})
     # st.write(all_errors)
     st.session_state.all_errors = all_errors
     all_models_forecasts = pd.merge(y_hat_gxb,GRU_forecast, on='ds', how='right')
-    # st.write(all_models_forecasts)
-    all_models_forecasts = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
     # st.write(all_models_forecasts1)
-    # st.write(data_pred)
+    # all_models_forecasts1 = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
+    # st.write(all_models_forecasts1)
+    all_models_forecasts = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
+    # st.write(all_models_forecasts2)
+    all_models_forecasts = pd.merge(all_models_forecasts,nutal_forecast, on='ds', how='right')
+    # st.write(all_models_forecasts3)
     all_models_forecasts = pd.merge(all_models_forecasts,data_pred, on='ds', how='outer')
-    # st.write(all_models_forecasts)
+    st.write(all_models_forecasts)
     st.session_state.all_models_forecasts = all_models_forecasts
+    # all_predictions = all_models_forecasts.copy()
+    # all_predictions['Mean forecast'] = all_predictions[['y_prediction','RNN_prediction','yhat','yhat1']].mean(axis= 1)
+    # all_predictions['Mean forecast'] = all_predictions.dropna(subset=['y_prediction','RNN_prediction','yhat','yhat1'])
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=all_models_forecasts2[-2*period:].index, y=all_models_forecasts2['y'], name="'True value'",line_color='#e74c3c'))
+    # fig.add_trace(go.Scatter(x=all_models_forecasts2[-2*period:].index, y=all_models_forecasts2['y_prediction'], name="XGB_prediction",line_color='deepskyblue'))
+    # fig.add_trace(go.Scatter(x=all_models_forecasts[-2*period:].index, y=all_models_forecasts['RNN_prediction'], name="'RNN_prediction'",line_color='royalblue'))
+    # # fig.add_trace(go.Scatter(x=y_hat_gxb.index, y=y_hat_gxb['y_prediction'], name="XGB_prediction",line_color='#e74c3c'))
+    # fig.layout.update(xaxis_rangeslider_visible=True)
+    # st.plotly_chart(fig)
+
     # plot_predictictions(all_models_forecasts, period)
     # plot_predictictions(all_models_forecasts, period)
     # st.write(json_models_forecasts)
-    # all_models_forecasts3 = all_models_forecasts2.dropna(subset=['y_prediction','RNN_prediction','yhat'])
+    # all_models_forecasts3 = all_models_forecasts2.dropna(subset=['y_prediction','RNN_prediction','yhat','yhat1'])
     # df = all_models_forecasts3.astype(float).round(2).copy()
     # df = pd.concat([pd.DataFrame([df.columns.values], columns=df.columns), df], ignore_index=True)
     # json_models_forecasts = df.to_json(orient ='values')
@@ -256,6 +292,10 @@ elif page == 'Conclusions':
     st.markdown('---')
     st.write(st.session_state.all_errors)
     plot_predictictions(st.session_state.all_models_forecasts, st.session_state.period)
+    plot_mean_prediction(st.session_state.all_models_forecasts, st.session_state.period)
+    # resempled = st.session_state.all_models_forecasts.resample('m').mean()
+    # resempled_period = st.session_state.period / 30
+    # plot_predictictions(resempled, resempled_period)
     # st.markdown('**Mean absolute error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MAE))
     # st.markdown('**Mean squared error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MSE))
     # st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MAPE*100)+ ' %')
