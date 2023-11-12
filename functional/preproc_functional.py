@@ -5,7 +5,6 @@ import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.graphics import tsaplots
 import numpy as np
-import scipy
 from scipy.stats import boxcox
 import matplotlib.pyplot as plt
 from scipy.stats import shapiro
@@ -17,8 +16,6 @@ def decompose(data_pred):
     seasonal = decomposition.seasonal
     fig = decomposition.plot()
     st.write(fig)
-    # st.subheader("Seasonal decomposition of resampled data by months ")
-    # df = data_pred['y'].resample('m').mean().dropna()
     try:
         st.subheader("Seasonal decomposition of resampled data by months ")
         df = data_pred['y'].resample('m').mean().dropna()
@@ -73,8 +70,6 @@ def preprocessing(df,target_column,data_column):
     Returns:
         data_pred after preprocessing
     """
-    # target_column = st.selectbox("Select target column", df.columns, index=1)
-    # data_column = st.selectbox("Select data column", df.columns, index=0)
     # Переименовываем колонки
     data_pred = df.copy()
     data_pred=data_pred.rename(columns={data_column: "ds", target_column: "y"})
@@ -99,7 +94,6 @@ def add_features_preprocessing(additional_data):
 Пропущенные данные по дням (выходные, например), будем заполнять предыдущими значениями (под вопросом).
     Args:
         initial df
-
     Returns:
         data_pred after preprocessing
     """
@@ -116,7 +110,6 @@ def add_features_preprocessing(additional_data):
     additional_features = additional_features.resample('d').mean()
     additional_features = additional_features.asfreq('d')
     # data_pred.fillna(method='ffill', inplace=True)
-    # data_pred = pd.DataFrame(data_pred["y"])
     return additional_features
 
 
@@ -174,12 +167,8 @@ def find_sesonality(data_pred):
     year_peek = round(len(year_series) / len(peak_data_year)) if len(peak_data_year) else None
     st.subheader("Visualization of daytime observations of raw data")
     plot_fig(day_series)
-    # st.subheader("Visualization of weekly observations of data")
-    # plot_fig(week_series)
     st.subheader("Visualization of monthly observations of raw data")
     plot_fig(months_series)
-    # st.subheader("Visualization of annual observations of raw data")
-    # plot_fig(year_series)
     seson_conclusion(days_peek, week_peek, months_peek, year_peek)
     return (days_peek, week_peek, months_peek, year_peek)
 
