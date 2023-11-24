@@ -9,7 +9,6 @@ from sklearn.preprocessing import StandardScaler
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from neuralprophet import NeuralProphet
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -38,10 +37,10 @@ def prophet(data_pred,period):
     all_forecasts = pd.merge(data_pred,stock_price_forecast, on='ds', how='right')
     all_forecasts = all_forecasts.set_index('ds')
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['y'], name="Adj Close True",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat_lower'], name="yhat_lower",line_color='#ffb000'))
-    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat'], name="yhat",line_color='#e74c3c'))
-    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat_upper'], name="yhat_upper",line_color='#ffb000'))
+    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['y'], name="True value",line_color='deepskyblue'))
+    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat_lower'], name="Predicted lower bend",line_color='#ffb000'))
+    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat'], name="Predicted value",line_color='#e74c3c'))
+    fig.add_trace(go.Scatter(x=stock_price_forecast.ds, y=all_forecasts['yhat_upper'], name="Predicted upper bend",line_color='#ffb000'))
     fig.layout.update(xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
     all_forecasts = pd.DataFrame(all_forecasts[['y','yhat']])
@@ -85,67 +84,6 @@ def prophet_select(data_pred,period):
     st.markdown('**Mean squared error of Prophet model for a period of '+str(period)+' days is** '+str(MSE))
     return prophet_dict
 
-def prophet_nural_select(data_pred,period):
-    """""Функция для расчета ошибки модели Prophet на указанный прогнозный период period""
-    Args:
-    Принимает датафрейм после предобработки функцией preprocessing()
-    Returns:
-    Возвращает словарь с ошибками модели MAE, MAPE, MSE
-    """
-    nprophet_model = NeuralProphet()
-    train_df = data_pred[:-period]
-    metrics = nprophet_model.fit(train_df, freq="D")
-    future_df = nprophet_model.make_future_dataframe(train_df,periods = period, n_historic_predictions=len(train_df))
-    forecast = nprophet_model.predict(future_df)
-    forecast = forecast[['ds', 'yhat1', 'y']]
-    forecast = forecast.set_index('ds')
-    test = data_pred['y'][len(data_pred)- period:]
-    y_pred = forecast['yhat1'][len(data_pred)- period:]
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data_pred.ds, y=data_pred['y'], name="True value",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=data_pred['ds'][len(data_pred)- period:], y=data_pred['y'][len(data_pred)- period:], name="True value of test period",line_color='royalblue'))
-    fig.add_trace(go.Scatter(x=forecast.index, y=forecast['yhat1'], name="Predicted values",line_color='#e74c3c'))
-    fig.layout.update(xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
-
-    # Логика оценки: мы оцениваем модель по такому же интервалу, по которому прогназируем. Т.е. если хотим прогнозировать на год, то
-    # оцениваем модель по средней ошибке за предыдущий год, если прогнозируем на неделю, то оцениваем тоже по последней неделе.
-    MAE = round(mean_absolute_error(test, y_pred),3)
-    MAPE = round(mean_absolute_percentage_error(test, y_pred),3)
-    MSE = round(mean_squared_error(test, y_pred),3)
-    neural_prophet_dict = {'MAE': MAE, 'MAPE': MAPE, 'MSE': MSE}
-    st.markdown('**Mean absolute error of NeuralProphet model for a period of '+str(period)+' days is** '+str(MAE))
-    st.markdown('**Mean absolute percentage error of NeuralProphet model for a period of '+str(period)+' days is** '+str(MAPE*100)+ '%')
-    st.markdown('**Mean squared error of Neural Prophet model for a period of '+str(period)+' days is** '+str(MSE))
-    return neural_prophet_dict
-
-def prophet_nural_predict(data_pred,period):
-    """""_summary_""
-    Returns:
-    Возвращает датафрейм с индексом ds для конкатинации и столбцом у (содержат NaN в прогнозах)
-    и столбцом 'yhat' - предсказаниями модели.
-        _type_: _description_
-    """
-    nprophet_model = NeuralProphet()
-    metrics = nprophet_model.fit(data_pred, freq="D")
-    future_df = nprophet_model.make_future_dataframe(data_pred,periods = period, n_historic_predictions=len(data_pred))
-    forecast = nprophet_model.predict(future_df)
-    #plot forecast
-    # fig1 = plot_plotly(m, forecast)
-
-    forecast = forecast.set_index('ds')
-    forecast = forecast[['yhat1', 'y']]
-
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=forecast.index, y=forecast['y'], name="True value",line_color='deepskyblue'))
-    fig.add_trace(go.Scatter(x=forecast.index, y=forecast['yhat1'], name="Nural Prophet forecasting",line_color='#e74c3c'))
-    fig.layout.update(xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
-    nural_forecast = pd.DataFrame(forecast['yhat1'])
-    return nural_forecast
-
-
-
 def create_features(df,period):
     """В функцию передается all_forecasts = prophet(data_pred,period)
     Функция возвращает датафрейм с колонками доп.признаков и индексом в datetime для последующей конкатенации
@@ -154,24 +92,24 @@ def create_features(df,period):
     # Extract time-based features
     df['week_of_year'] = df.index.week
     df['dayofweek'] = df.index.dayofweek
-    # df['day'] = df.index.day
+    df['day'] = df.index.day
     df['month'] = df.index.month
-    # df['is_weekend'] = df.index.weekday.isin([5,6])*1
-    # df['sin_dayofweek'] = np.sin(2*np.pi*(df['dayofweek']-0)/7)
-    # df['cos_dayofweek'] = np.cos(2*np.pi*(df['dayofweek']-0)/7)
-    # df['sin_month'] = np.sin(2*np.pi*(df['month']-0)/7)
-    # df['cos_month'] = np.cos(2*np.pi*(df['month']-0)/7)
-    # df['sin_week_of_year'] = np.sin(2*np.pi*(df['week_of_year']-0)/7)
-    # df['cos_week_of_year'] = np.cos(2*np.pi*(df['week_of_year']-0)/7)
-    # df["time_idx"] = df.index.year * 12 + df.index.month
-    # df["time_idx"] -= df["time_idx"].min()
+    df['is_weekend'] = df.index.weekday.isin([5,6])*1
+    df['sin_dayofweek'] = np.sin(2*np.pi*(df['dayofweek']-0)/7)
+    df['cos_dayofweek'] = np.cos(2*np.pi*(df['dayofweek']-0)/7)
+    df['sin_month'] = np.sin(2*np.pi*(df['month']-0)/7)
+    df['cos_month'] = np.cos(2*np.pi*(df['month']-0)/7)
+    df['sin_week_of_year'] = np.sin(2*np.pi*(df['week_of_year']-0)/7)
+    df['cos_week_of_year'] = np.cos(2*np.pi*(df['week_of_year']-0)/7)
+    df["time_idx"] = df.index.year * 12 + df.index.month
+    df["time_idx"] -= df["time_idx"].min()
     # Lagged features
     lag_list = [period]
     for i in lag_list:
         df["lag_{}".format(i)] = df.y.shift(i)
 
     # Presidential term cycle feature
-    # df['year_index'] = df.index.year % 4  # Remainder of current year divided by 4
+    df['year_index'] = df.index.year % 4  # Remainder of current year divided by 4
     return df
 
 

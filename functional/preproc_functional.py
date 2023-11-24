@@ -78,7 +78,7 @@ def preprocessing(df,target_column,data_column):
     data_pred = data_pred.set_index('ds')
     data_pred.sort_index(inplace=True)
     # Ресемплируем по дням и заполняем пропущенные предыдущими значением
-    data_pred = data_pred.resample('d').mean()
+    data_pred = data_pred.resample('d').mean(numeric_only = False)
     data_pred = data_pred.asfreq('d')
     data_pred.ffill(inplace=True)
     data_pred.bfill(inplace=True)

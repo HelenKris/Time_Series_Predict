@@ -8,8 +8,8 @@ from streamlit_echarts import JsCode
 
 def plot_mean_prediction(all_models_forecasts, period):
     all_predictions = all_models_forecasts.copy()
-    all_predictions['Mean forecast'] = all_predictions[['y_prediction','RNN_prediction','yhat','yhat1']].mean(axis= 1)
-    all_predictions = all_predictions.dropna(subset=['y_prediction','RNN_prediction','yhat','yhat1'])
+    all_predictions['Mean forecast'] = all_predictions[['y_prediction','RNN_prediction','yhat']].mean(axis= 1)
+    all_predictions = all_predictions.dropna(subset=['y_prediction','RNN_prediction','yhat'])
     # st.write(all_predictions)
     all_week_predictions = all_predictions.resample('w').mean()
     all_month_predictions = all_predictions.resample('m').mean()
@@ -66,7 +66,7 @@ def plot_predictictions(all_models_forecasts, period):
     df = all_models_forecasts[-3*period:].astype(float).round(2).copy()
     df = df.reset_index()
     df['ds'] = df['ds'].dt.strftime('%Y-%m-%d')
-    df.rename(columns={'ds': 'Data','y_prediction': 'XGBoost Prediction', 'RNN_prediction': 'GUN prediction', 'yhat1': 'Nural Prophet prediction','yhat': 'Prophet prediction','y': 'Historical value'}, inplace=True)
+    df.rename(columns={'ds': 'Data','y_prediction': 'XGBoost Prediction', 'RNN_prediction': 'GUN prediction','yhat': 'Prophet prediction','y': 'Historical value'}, inplace=True)
     df = df.melt(id_vars="Data")
     df = df.dropna()
     df.rename(columns={'variable': 'Model', 'value': 'Value'}, inplace=True)
@@ -76,7 +76,7 @@ def plot_predictictions(all_models_forecasts, period):
     with open('df.json') as f:
         raw_data = json.load(f)
 
-    models = ["XGBoost Prediction","GUN prediction","Historical value"]
+    models = ["XGBoost Prediction","GUN prediction","Prophet prediction","Historical value"]
     datasetWithFilters = [
         {
             "id": f"dataset_{model}",

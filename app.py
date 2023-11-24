@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from functional.preproc_functional import seson_conclusion,find_sesonality, first_dif, hist_plot, decompose, ts_test, preprocessing, plot_fig,plot_Ohlc_fig,add_features_preprocessing,to_normal_dist, is_normal
-from functional.predict_functional import prophet_nural_predict, prophet_nural_select, GRU_select, GRU_predict, prophet, create_features, XGB_predict, prophet_select,XGB_select
+from functional.predict_functional import GRU_select, GRU_predict, prophet, create_features, XGB_predict, prophet_select,XGB_select
 import yfinance as yf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
@@ -168,6 +168,7 @@ elif page == "Prediction":
     st.header("Forecasting with Prophet")
     all_forecasts = prophet(data_predict,period)
     Prophet_forecast = pd.DataFrame(all_forecasts['yhat'], index=all_forecasts.index)
+    st.session_state.all_forecasts = all_forecasts
 
     st.markdown('---')
     feature_df = create_features(all_forecasts,period)
@@ -175,10 +176,12 @@ elif page == "Prediction":
     if agree1 or agree2:
         feature_df = pd.merge(feature_df,additional_features, on='ds', how='left')
     st.header('Model: XGBoost. Test period: '+str(period)+' days')
+
     xgb_dict = XGB_select(feature_df,period)
     st.header("Forecasting with XGBoost")
     y_hat_gxb = XGB_predict(feature_df,period)
-    # st.write(y_hat_gxb)
+
+
 
     st.header('Model: recurrent neural networks with GRU. Test period: '+str(period)+' days')
     load_GRU_state = st.text('Please,wait. GRU model is working...')
@@ -190,18 +193,16 @@ elif page == "Prediction":
     GRU_forecast = GRU_predict(feature_df,period=period,num_epochs=500)
     load_GRU_state.text('GRU model is done!')
 
-
-    st.header('Model: NeuralProphet. Test period: '+str(period)+' days')
-    neural_prophet_dict = prophet_nural_select(st.session_state.data_predict,period)
-    st.header('Model: Nural Prophet. Forecasting period: '+str(period)+' days')
-    nutal_forecast = prophet_nural_predict(data_predict,period)
-    all_errors = pd.DataFrame({'Prophet model':pd.Series(prophet_dict),'Nural Prophet model':pd.Series(neural_prophet_dict),'XGBoost model':pd.Series(xgb_dict),'GRU model':pd.Series(gru_dict)})
+    # st.header('Model: NeuralProphet. Test period: '+str(period)+' days')
+    # neural_prophet_dict = prophet_nural_select(st.session_state.data_predict,period)
+    # st.header('Model: Nural Prophet. Forecasting period: '+str(period)+' days')
+    # nutal_forecast = prophet_nural_predict(data_predict,period)
+    all_errors = pd.DataFrame({'Prophet model':pd.Series(prophet_dict),'XGBoost model':pd.Series(xgb_dict),'GRU model':pd.Series(gru_dict)})
     st.session_state.all_errors = all_errors
     all_models_forecasts = pd.merge(y_hat_gxb,GRU_forecast, on='ds', how='right')
     all_models_forecasts = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
-    all_models_forecasts = pd.merge(all_models_forecasts,nutal_forecast, on='ds', how='right')
+    # all_models_forecasts = pd.merge(all_models_forecasts,nutal_forecast, on='ds', how='right')
     all_models_forecasts = pd.merge(all_models_forecasts,data_pred, on='ds', how='outer')
-    # st.write(all_models_forecasts)
     st.session_state.all_models_forecasts = all_models_forecasts
 
 elif page == 'Conclusions':
@@ -216,33 +217,8 @@ elif page == 'Conclusions':
     st.markdown('---')
     seson_conclusion(days_peek, week_peek, months_peek, year_peek)
     st.markdown('---')
-    # st.markdown('The conclusions about the automatically calculated cyclicity provided in the report are for informational purposes only.')
-    # st.markdown('---')
-    # st.header("Results of tests for normality of target distribution")
-    # st.markdown('**Result of Shapiro-Wilk test for normality of raw target:**  ' +str(st.session_state.normal_raw_data))
-    # st.markdown('**Result of Shapiro-Wilk test for normality of target after power-law transformation:**  ' +str(st.session_state.normal_sqrt_data))
-    # st.markdown('**Result of Shapiro-Wilk test for normality of target after Logarithm transformation:**  ' +str(st.session_state.normal_log_data))
-    # st.markdown('**Result of Shapiro-Wilk test for normality of target after Boxcox transformation:**  ' +str(st.session_state.normal_boxcox_data))
-    # st.markdown('---')
-    # st.header("Results of test on stationarity")
-    # st.markdown('---')
-    # st.markdown('**Result of raw target:**  ' +str(st.session_state.addfuller_test))
-    # st.markdown('**Result of raw target:**  ' +str(st.session_state.KPSS_test))
-    # st.markdown('**Result of target after first differences:**  ' +str(st.session_state.addfuller_test_dif))
-    # st.markdown('**Result of target after first differences:**  ' +str(st.session_state.KPSS_test_dif))
-    # st.markdown('---')
     st.header("Results of selecting models for predictions")
     st.markdown('---')
     st.write(st.session_state.all_errors)
     plot_predictictions(st.session_state.all_models_forecasts, st.session_state.period)
     plot_mean_prediction(st.session_state.all_models_forecasts, st.session_state.period)
-    # resempled = st.session_state.all_models_forecasts.resample('m').mean()
-    # resempled_period = st.session_state.period / 30
-    # plot_predictictions(resempled, resempled_period)
-    # st.markdown('**Mean absolute error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MAE))
-    # st.markdown('**Mean squared error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MSE))
-    # st.markdown('**Mean absolute percentage error of XGBoost model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.XGB_MAPE*100)+ ' %')
-    # st.markdown('---')
-    # st.markdown('**Mean absolute error of Prophet model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.prophet_MAE))
-    # st.markdown('**Mean squared error of Prophet model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.prophet_MSE))
-    # st.markdown('**Mean absolute percentage error of Prophet model for a period of '+str(st.session_state.predict_period)+' days is** '+str(st.session_state.prophet_MAPE*100)+ ' %')
