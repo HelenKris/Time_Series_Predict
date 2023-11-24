@@ -73,7 +73,7 @@ if page == "Data loading and preprocessing":
     st.session_state.target_column = target_column
     st.session_state.data_column = data_column
 
-    agree = st.checkbox('Show data after preprocessing')
+    agree = st.checkbox('Show data after preprocessing', value=True)
     if agree:
         try:
             data_pred = preprocessing(df,target_column,data_column)
