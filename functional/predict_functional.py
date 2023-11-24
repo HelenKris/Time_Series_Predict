@@ -90,7 +90,6 @@ def create_features(df,period):
     с целевым признаком и предсказаниями prophet тоже
     """
     # Extract time-based features
-    df['week_of_year'] = df.index.week
     df['dayofweek'] = df.index.dayofweek
     df['day'] = df.index.day
     df['month'] = df.index.month
@@ -99,8 +98,6 @@ def create_features(df,period):
     df['cos_dayofweek'] = np.cos(2*np.pi*(df['dayofweek']-0)/7)
     df['sin_month'] = np.sin(2*np.pi*(df['month']-0)/7)
     df['cos_month'] = np.cos(2*np.pi*(df['month']-0)/7)
-    df['sin_week_of_year'] = np.sin(2*np.pi*(df['week_of_year']-0)/7)
-    df['cos_week_of_year'] = np.cos(2*np.pi*(df['week_of_year']-0)/7)
     df["time_idx"] = df.index.year * 12 + df.index.month
     df["time_idx"] -= df["time_idx"].min()
     # Lagged features
@@ -151,7 +148,6 @@ def XGB_select(feature_df,period):
 
 def XGB_predict(feature_df,period):
     """""_summary_""
-
 Args:
     feature_df (_type_):обогащенный дополнительными признаками датасет c целевым признаком и предсказаниями Prohet
     period (_type_): _description_

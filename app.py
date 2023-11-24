@@ -4,7 +4,6 @@ from functional.preproc_functional import seson_conclusion,find_sesonality, firs
 from functional.predict_functional import GRU_select, GRU_predict, prophet, create_features, XGB_predict, prophet_select,XGB_select
 import yfinance as yf
 import matplotlib.pyplot as plt
-import plotly.graph_objects as go
 from functional.visualisation import plot_predictictions,plot_mean_prediction
 
 plt.style.use('https://github.com/dhaitz/matplotlib-stylesheets/raw/master/pitayasmoothie-light.mplstyle')
@@ -181,27 +180,20 @@ elif page == "Prediction":
     st.header("Forecasting with XGBoost")
     y_hat_gxb = XGB_predict(feature_df,period)
 
-
-
     st.header('Model: recurrent neural networks with GRU. Test period: '+str(period)+' days')
     load_GRU_state = st.text('Please,wait. GRU model is working...')
-    gru_dict = GRU_select(feature_df,period=period, num_epochs = 500)
+    gru_dict = GRU_select(feature_df,period=period, num_epochs = 300)
     load_GRU_state.text('GRU model is done!')
 
     st.header("Forecasting with GRU model")
     load_GRU_state = st.text('Please,wait. GRU model is working...')
-    GRU_forecast = GRU_predict(feature_df,period=period,num_epochs=500)
+    GRU_forecast = GRU_predict(feature_df,period=period,num_epochs=300)
     load_GRU_state.text('GRU model is done!')
 
-    # st.header('Model: NeuralProphet. Test period: '+str(period)+' days')
-    # neural_prophet_dict = prophet_nural_select(st.session_state.data_predict,period)
-    # st.header('Model: Nural Prophet. Forecasting period: '+str(period)+' days')
-    # nutal_forecast = prophet_nural_predict(data_predict,period)
     all_errors = pd.DataFrame({'Prophet model':pd.Series(prophet_dict),'XGBoost model':pd.Series(xgb_dict),'GRU model':pd.Series(gru_dict)})
     st.session_state.all_errors = all_errors
     all_models_forecasts = pd.merge(y_hat_gxb,GRU_forecast, on='ds', how='right')
     all_models_forecasts = pd.merge(all_models_forecasts,Prophet_forecast, on='ds', how='right')
-    # all_models_forecasts = pd.merge(all_models_forecasts,nutal_forecast, on='ds', how='right')
     all_models_forecasts = pd.merge(all_models_forecasts,data_pred, on='ds', how='outer')
     st.session_state.all_models_forecasts = all_models_forecasts
 
