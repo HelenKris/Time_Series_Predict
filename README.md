@@ -15,3 +15,5 @@ An example of the expected terminal messages are shown below:
 
   Local URL: http://localhost:8501
   Network URL: http://10.20.0.4:8501
+
+  Now you can open this version on https://kris-prediction.streamlit.app/
